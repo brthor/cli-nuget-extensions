@@ -115,6 +115,7 @@ For a consumer project like so:
 ```
 
 The General flow is described in the diagram:
+
 ![](https://github.com/brthor/cli-nuget-extensions/blob/master/cli-extensions.png)
 
 The changes to the driver are almost purely changing the search strategy it uses to find the extension .dll file.

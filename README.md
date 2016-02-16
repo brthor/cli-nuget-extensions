@@ -84,12 +84,12 @@ The NuSpec Could add a top level node like:
 After the restore finished, the extension package would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the directory `NUGET_PACKAGE_CACHE/packages/dotnet-extension-package/1.0.0` would be copied to `NUGET_PACKAGE_CACHE/dotnet-extensions/dotnet-extension-package/1.0.0`. The project.lock.json of this independent restoration should also be stored here. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
 
 Summary of NuGet changes:
-- [] Recognize "dotnet-extensions" node in project.json
-- [] Kick off independent restores for each extension package node in `dotnet-extensions` node
-- [] After each of the independent restores, copy the top level extension package to the special `dotnet-extensions` package hive
-- [] Add understanding of "dotnet-extension-data" node in NuSpec of extension package
-- [] Include imports from "dotnet-extension-data" in restore of each targetframework
-- [] Add "dotnet-extension-data" nuspec output to `nuget pack`
+- [ ] Recognize "dotnet-extensions" node in project.json
+- [ ] Kick off independent restores for each extension package node in `dotnet-extensions` node
+- [ ] After each of the independent restores, copy the top level extension package to the special `dotnet-extensions` package hive
+- [ ] Add understanding of "dotnet-extension-data" node in NuSpec of extension package
+- [ ] Include imports from "dotnet-extension-data" in restore of each targetframework
+- [ ] Add "dotnet-extension-data" nuspec output to `nuget pack`
 
 ## Invocation of Extension Command (dotnet cli side)
 
@@ -126,8 +126,8 @@ It is very reliant on nuget to place things correctly, so it's worth calling out
 3. dotnet driver expects that the dotnet-extension-package package will have a runtime export with filename `dotnet-extension-package.dll`
 
 Changes to `dotnet`
-- [] Change Extension Resolution Strategy to search the dotnet-extensions package hive
-- [] Add understanding of `dotnet-extensions` top level node in project.json
+- [ ] Change Extension Resolution Strategy to search the dotnet-extensions package hive
+- [ ] Add understanding of `dotnet-extensions` top level node in project.json
 
 
 ## Additional Scenarios
@@ -144,8 +144,8 @@ The driver would have an additional resolution strategy for searching the native
 To support easy creation this package we'd need to introduce a method of including native assets in `dotnet pack`.
 
 Summary:
-- [] Fallback Extension Resolution strategy in the dotnet driver for searching native exports of an extension package
-- [] Method of including Native (?) Assets in a nuget package via dotnet pack
+- [ ] Fallback Extension Resolution strategy in the dotnet driver for searching native exports of an extension package
+- [ ] Method of including Native (?) Assets in a nuget package via dotnet pack
 
 
 ### Command Extensions with an alias different than the package
@@ -178,7 +178,7 @@ If `dotnet fooproduct` was invoked from the command line, the driver would load 
 In the case of multiple nodes under `dotnet extensions` in the consumer project, each package would be searched (in order) and the first matching dll invoked.
 
 Summary:
-- [] Add Command resolution logic to search through `dotnet-extensions` package ProjectContexts for a .dll matching the invoked command
+- [ ] Add Command resolution logic to search through `dotnet-extensions` package ProjectContexts for a .dll matching the invoked command
 
 ### Metapackages which bring in multiple dotnet extensions
 
@@ -189,8 +189,8 @@ This could work by NuGet doing a restore as detailed above, looking for the <dot
 With extension aliases being supported (see above) the only change needed here would be to expand the Command resolution strategy to search the dependencies of packages in the `dotnet-extensions` node which exist in the dotnet extensions package hive. In other words, the alias based search detailed above would flow only to dependencies which are also extension packages.
 
 Summary
-- [] NuGet would transitively kick off independent extension restores for dependencies of a metapackage which are also extension packages
-- [] Extend Alias based Command Resolution logic in the driver to flow through to package dependencies which are also extension packages
+- [ ] NuGet would transitively kick off independent extension restores for dependencies of a metapackage which are also extension packages
+- [ ] Extend Alias based Command Resolution logic in the driver to flow through to package dependencies which are also extension packages
 
 
 # Open Questions

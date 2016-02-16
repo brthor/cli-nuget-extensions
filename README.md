@@ -89,8 +89,10 @@ Summary of NuGet changes:
 - [] After each of the independent restores, copy the top level extension package to the special `dotnet-extensions` package hive
 - [] Add understanding of "dotnet-extension-data" node in NuSpec of extension package
 - [] Include imports from "dotnet-extension-data" in restore of each targetframework
+- [] Add "dotnet-extension-data" nuspec output to `nuget pack`
 
 ## Invocation of Extension Command (dotnet cli side)
+
 The dotnet driver will use a command resolution strategy for finding commands from the dotnet extensions package hive.
 
 For a consumer project like so:
@@ -112,13 +114,20 @@ For a consumer project like so:
 }
 ```
 
-If the user invoked `dotnet extension-package`
+The General flow is described in the diagram:
+![](https://github.com/brthor/cli-nuget-extensions/blob/master/cli-extensions.png)
 
-Changes to `dotnet pack`:
-- [] Generate `<dotnet-extension-data>` node in NuSpec
+The changes to the driver are almost purely changing the search strategy it uses to find the extension .dll file.
+It is very reliant on nuget to place things correctly, so it's worth calling out the specific contracts:
+
+1. dotnet driver expects that a restore of an extensions package will have the unpacked package directory (`NUGET_PACKAGE_CACHE/packages/dotnet-extension-package/1.0.0`) copied to the dotnet-extensions package hive (`NUGET_PACKAGE_CACHE/dotnet-extensions/dotnet-extension-package/1.0.0`)
+2. dotnet driver expects that a project.lock.json for the `dotnet-extension-package` will exist in the dotnet-extensions package hive (`NUGET_PACKAGE_CACHE/dotnet-extensions/dotnet-extension-package/1.0.0/project.lock.json`)
+3. dotnet driver expects that the dotnet-extension-package package will have a runtime export with filename `dotnet-extension-package.dll`
 
 Changes to `dotnet`
-- [] Logic to generate deps file in 
+- [] Change Extension Resolution Strategy to search the dotnet-extensions package hive
+- [] Add understanding of `dotnet-extensions` top level node in project.json
+
 
 ## Additional Scenarios
 

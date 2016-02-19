@@ -81,7 +81,7 @@ The NuSpec Could add a top level node like:
 </dotnet-extension-data>
 ```
 
-After the restore finished, the extension package would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the directory `NUGET_PACKAGE_CACHE/packages/dotnet-extension-package/1.0.0` would be copied to `NUGET_PACKAGE_CACHE/dotnet-extensions/dotnet-extension-package/1.0.0`. The project.lock.json of this independent restoration should also be stored here. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
+After the restore finished, the extension package would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the directory `~/.nuget/packages/dotnet-extension-package/1.0.0` would be copied to `~/.nuget/dotnet-extensions/dotnet-extension-package/1.0.0`. The project.lock.json of this independent restoration should also be stored here. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
 
 Summary of NuGet changes:
 - [ ] Recognize "dotnet-extensions" node in project.json
@@ -121,8 +121,8 @@ The General flow is described in the diagram:
 The changes to the driver are almost purely changing the search strategy it uses to find the extension .dll file.
 It is very reliant on nuget to place things correctly, so it's worth calling out the specific contracts:
 
-1. dotnet driver expects that a restore of an extensions package will have the unpacked package directory (`NUGET_PACKAGE_CACHE/packages/dotnet-extension-package/1.0.0`) copied to the dotnet-extensions package hive (`NUGET_PACKAGE_CACHE/dotnet-extensions/dotnet-extension-package/1.0.0`)
-2. dotnet driver expects that a project.lock.json for the `dotnet-extension-package` will exist in the dotnet-extensions package hive (`NUGET_PACKAGE_CACHE/dotnet-extensions/dotnet-extension-package/1.0.0/project.lock.json`)
+1. dotnet driver expects that a restore of an extensions package will have the unpacked package directory (`~/.nuget/packages/dotnet-extension-package/1.0.0`) copied to the dotnet-extensions package hive (`~/.nuget/dotnet-extensions/dotnet-extension-package/1.0.0`)
+2. dotnet driver expects that a project.lock.json for the `dotnet-extension-package` will exist in the dotnet-extensions package hive (`~/.nuget/dotnet-extensions/dotnet-extension-package/1.0.0/project.lock.json`)
 3. dotnet driver expects that the dotnet-extension-package package will have a runtime export with filename `dotnet-extension-package.dll`
 
 Changes to `dotnet`
@@ -195,5 +195,9 @@ Summary
 
 # Open Questions
 - If an extension package defines more than one TfM, the driver will just use the first one. Should this be configurable. Can't think of any scenarios for this right now.
+- If an extension is using a different framework than the project, can it still run?
+- Does the extension need to pull the project dependencies or not?
+- Can an extension define extra dependencies (not sure if we have a scenario for that)
+- How does pack know we are packing an extension? Is there a project.json definition to say we are building an extension package?
 
 - What is the source of truth for the location of the packages folder? This is very important for the driver.

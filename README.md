@@ -70,7 +70,7 @@ Imports information per TfM of the tool would need to be included to solve the i
 
 In this case we need to preserve the imports statement or the restore will fail.
 
-The NuSpec Could add a top level node like:
+~~The NuSpec Could add a top level node like:~~ (maybe v2)
 ```
 ...
 <dotnet-extension-data>
@@ -81,7 +81,9 @@ The NuSpec Could add a top level node like:
 </dotnet-extension-data>
 ```
 
-After the restore finished, the extension package project.lock.json would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the file `~/.nuget/packages/dotnet-extension-package/1.0.0/project.lock.json` would be copied to `~/.nuget/dotnet-extensions/dotnet-extension-package/1.0.0`. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
+Extension package tfm must be netstandardapp1.5, or compatible. Fail otherwise. No imports statements. Any dlls for dependencies which must be restored via `imports` must be manually included in the package.
+
+After the restore finished, the extension package project.lock.json would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the file `project.lock.json` would be generated in `~/.nuget/packages/.tools/dotnet-extension-package/1.0.0/{tfm}`. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
 
 Summary of NuGet changes:
 - [ ] Recognize "dotnet-extensions" node in project.json
@@ -92,7 +94,7 @@ Summary of NuGet changes:
 - [ ] Add "dotnet-extension-data" nuspec output to `nuget pack`
 
 ## Invocation of Extension Command (dotnet cli side)
-
+NOTE: tools do not flow between P2P dependencies (build type dependencies)
 The dotnet driver will use a command resolution strategy for finding commands from the dotnet extensions package hive.
 
 For a consumer project like so:
@@ -113,6 +115,7 @@ For a consumer project like so:
     }
 }
 ```
+NOTE: 
 
 The General flow is described in the diagram:
 
@@ -155,11 +158,11 @@ This would allow a package like `Microsoft.DotNet.FooProduct.CliExtension` to in
 
 To support this, the logic of the driver command resolution strategy would need to change to do a constrained search through the `dotnet-extensions` package hive for the command being invoked. This search would be constrained to the package names and versions defined in the `dotnet-extensions` node of the project.json of the consumer project. If a .dll (or executable if non-managed commands were supported) matching the invoked command name was found, the driver would invoke that.
 
-For example, given a consumer project detailed like so:
 ```
 {
     "version": "1.0.0-*",
-    "command": "foo",
+    "name": "dotnet-fooproduct",
+    "packageName???
 
     "dependencies": {
         "NETStandard.Library": "1.0.0-*"
@@ -167,12 +170,6 @@ For example, given a consumer project detailed like so:
 
     "frameworks": {
         "dnxcore50": { }
-    },
-
-    "dotnet-extensions": {
-        "tools": {
-            "Microsoft.DotNet.FooProduct.CliExtension": "1.0.0"
-        }
     }
 }
 ```
@@ -186,12 +183,9 @@ EDIT: Nuspec Changes
 <dotnet-extension-data>
     <command>
         <name>foo</name>
-        <assembly>lib/runtimes/any/dotnet.fooextension.dll</assembly>
+        <assembly>lib/netstandardapp1.5/dotnet.fooextension.dll</assembly>
     </command>
-    <targetframework>
-        <tfm>dnxcore50</tfm>
-        <imports>portable-net45+win81</imports>
-    </targetframework>
+    <imports>portable-net45+win81</imports>
 </dotnet-extension-data>
 ```
 
@@ -211,17 +205,16 @@ Summary:
     "frameworks": {
         "dnxcore50": { }
     },
-
-    "dotnet-extensions": {
-        "tools": {
-            "Microsoft.DotNet.FooProduct": "1.0.0",
-            "Microsoft.DotNet.FooProduct2": "1.0.0"
-        },
-        "aliases": {
-            "package": "Microsoft.DotNet.FooProduct",
-            "alias": "bar"
-        }
-    }
+  "tools": {
+    "Microsoft.AspNetCore.MyTool": {
+      "version": "1.0.0-*",
+      "alias": {
+        "dotnet-my-tool": "alias1",
+        "dotnet-my-tool2": "alias2"
+       }
+    },
+    "Another.Tool": "1.0.0"
+  }
 }
 ```
 

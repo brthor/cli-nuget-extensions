@@ -81,7 +81,7 @@ The NuSpec Could add a top level node like:
 </dotnet-extension-data>
 ```
 
-After the restore finished, the extension package would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the directory `~/.nuget/packages/dotnet-extension-package/1.0.0` would be copied to `~/.nuget/dotnet-extensions/dotnet-extension-package/1.0.0`. The project.lock.json of this independent restoration should also be stored here. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
+After the restore finished, the extension package project.lock.json would be copied from the `packages` hive to the `dotnet-extensions` hive. More specifically, the file `~/.nuget/packages/dotnet-extension-package/1.0.0/project.lock.json` would be copied to `~/.nuget/dotnet-extensions/dotnet-extension-package/1.0.0`. This is to create a safe location where the driver can load a project context and generate a deps file (addressed later) without mutating the package cache.
 
 Summary of NuGet changes:
 - [ ] Recognize "dotnet-extensions" node in project.json
@@ -147,14 +147,59 @@ Summary:
 - [ ] Fallback Extension Resolution strategy in the dotnet driver for searching native exports of an extension package
 - [ ] Method of including Native (?) Assets in a nuget package via dotnet pack
 
+### Extension Aliases, Consumer and Extension Package sides
 
-### Command Extensions with an alias different than the package
+#### Command Extension Packages which Provide a tool with a different name than the package
 
 This would allow a package like `Microsoft.DotNet.FooProduct.CliExtension` to include a tool `dotnet-fooproduct`
 
 To support this, the logic of the driver command resolution strategy would need to change to do a constrained search through the `dotnet-extensions` package hive for the command being invoked. This search would be constrained to the package names and versions defined in the `dotnet-extensions` node of the project.json of the consumer project. If a .dll (or executable if non-managed commands were supported) matching the invoked command name was found, the driver would invoke that.
 
 For example, given a consumer project detailed like so:
+```
+{
+    "version": "1.0.0-*",
+    "command": "foo",
+
+    "dependencies": {
+        "NETStandard.Library": "1.0.0-*"
+    },
+
+    "frameworks": {
+        "dnxcore50": { }
+    },
+
+    "dotnet-extensions": {
+        "tools": {
+            "Microsoft.DotNet.FooProduct.CliExtension": "1.0.0"
+        }
+    }
+}
+```
+
+If `dotnet fooproduct` was invoked from the command line, the driver would load the ProjectContext of the project.lock.json in `~/.nuget/dotnet-extensions/Microsoft.DotNet.FooProduct.CliExtension/1.0.0/` and search it's exports for dll matching `dotnet-fooproduct.dll`. The same logic is used for resolving a default in the case of multiples.
+
+In the case of multiple nodes under `dotnet extensions` in the consumer project, each package would be searched (in order) and the first matching dll invoked.
+
+EDIT: Nuspec Changes
+```
+<dotnet-extension-data>
+    <command>
+        <name>foo</name>
+        <assembly>lib/runtimes/any/dotnet.fooextension.dll</assembly>
+    </command>
+    <targetframework>
+        <tfm>dnxcore50</tfm>
+        <imports>portable-net45+win81</imports>
+    </targetframework>
+</dotnet-extension-data>
+```
+
+Summary:
+- [ ] Add Command resolution logic to search through `dotnet-extensions` package ProjectContexts for a .dll matching the invoked command
+
+
+#### Consumer Project Which references multiple extension packages providing the same tool name
 ```
 {
     "version": "1.0.0-*",
@@ -168,17 +213,20 @@ For example, given a consumer project detailed like so:
     },
 
     "dotnet-extensions": {
-        "Microsoft.DotNet.FooProduct.CliExtension": "1.0.0"
+        "tools": {
+            "Microsoft.DotNet.FooProduct": "1.0.0",
+            "Microsoft.DotNet.FooProduct2": "1.0.0"
+        },
+        "aliases": {
+            "package": "Microsoft.DotNet.FooProduct",
+            "alias": "bar"
+        }
     }
 }
 ```
 
-If `dotnet fooproduct` was invoked from the command line, the driver would load the ProjectContext of the project.lock.json in `NUGET_PACKAGE_CACHE/dotnet-extensions/Microsoft.DotNet.FooProduct.CliExtension/1.0.0/` and search it's exports for dll matching `dotnet-fooproduct.dll`. The same logic is used for resolving a default in the case of multiples.
-
-In the case of multiple nodes under `dotnet extensions` in the consumer project, each package would be searched (in order) and the first matching dll invoked.
-
-Summary:
-- [ ] Add Command resolution logic to search through `dotnet-extensions` package ProjectContexts for a .dll matching the invoked command
+`dotnet bar` maps to `dotnet-foo` command in `Microsoft.DotNet.FooProduct`
+`dotnet foo` maps to `dotnet-foo` command in `Microsoft.DotNet.FooProduct2`
 
 ### Metapackages which bring in multiple dotnet extensions
 

@@ -67,8 +67,7 @@ The intention is to capture any contracts which are created between the dotnet c
 Base Path: `~/.nuget/packages/.tools`
 
 ToolPaths: 
-`~/.nuget/packages/.tools/{package_name}/1.0.0/{tfm}/project.lock.json` 
-`~/.nuget/packages/.tools/{package_name}/1.0.0/{tfm}/dotnet-{toolname}.deps
+`~/.nuget/packages/.tools/{package_name}/{version}/{tfm}/project.lock.json`
 
 # Detailed Explanations
 
@@ -109,16 +108,10 @@ After the restore finished, the project.lock.json of the tool package would be s
 
 More specifically, the project.lock.json and deps file would be placed in `~/.nuget/packages/.tools/dotnet-tool-package/1.0.0/{tfm}`.
 
-NOTES: 
-- tools do not flow between P2P dependencies
-- Tool Packages must use `netstandardapp1.5` or a compatible TfM.
-- If a tool package has more than one TfM some rules will be followed to pick only one for restoration (see open questions)
-
 Summary of NuGet changes:
 - [ ] Recognize "tools" node in project.json
 - [ ] Kick off independent restores for each tool package node in `tool` node
-- [ ] After each of the independent restores, save the project.lock.json in ~/.nuget/packages/.tools/{package_name}/1.0.0/{tfm}`
-- [ ] After each of the independent restores, copy the deps file from the package to ~/.nuget/packages/.tools/{package_name}/1.0.0/{tfm}`
+- [ ] After each of the independent restores, save the project.lock.json in `~/.nuget/packages/.tools/{package_name}/{version}/{tfm}`
 - [ ] `pack` must include the deps file in a tool package (See open questions)
 
 ## Invocation of Extension Command (dotnet cli side)
@@ -163,12 +156,29 @@ Changes to `dotnet`
 
 ** Removed until further discussion **
 
+# Meeting Notes
+
+## 2016-??-??
+
+- Tools do not flow between P2P dependencies.
+- Tool Packages must use `netstandardapp1.5` or a compatible TFM.
+- If a tool package has more than one TfM some rules will be followed to pick only one for restoration (see open questions).
+
+## 2016-03-03
+
+- First stage of NuGet work is just in the project.json format and restore code. We will not think about the UI (and marking a package as a tool) quite yet.
+- For now, the TFM to use in the `.tools` directory is hard coded to be `netstandardapp1.5`. The TFM itself may be renamed before release.
+- We will only support the version string under the `tools` node (not a complex object like the `dependencies` node) or an object with only the `version` property. No other properties are supported yet.
+- NuGet can generate the project.lock.json file that goes into the `.tools` directory by building the project.json model in memory based off of the tool's .nuspec file.
+
 # Open Questions
 - Does pack always pack a deps file, or only for tool packages?
-- What precedence rules do we use to determine the TfM for a tool package which defines more than one?
+- What precedence rules do we use to determine the TFM for a tool package which defines more than one?
+  - For now we are hard coding `netstandardapp1.5`.
 - If an extension is using a different framework than the project, can it still run?
 - Does the extension need to pull the project dependencies or not?
 - Can an extension define extra dependencies (not sure if we have a scenario for that)
-- How does pack know we are packing an extension? Is there a project.json definition to say we are building an extension package?
-
+- How does pack know we are packing an extension? 
+  - Is there a project.json definition to say we are building an extension package?
+  - Maybe an argument passed to pack?
 - What is the source of truth for the location of the packages folder? This is very important for the driver.

@@ -58,10 +58,6 @@ The intention is to capture any contracts which are created between the dotnet c
 
     "frameworks": {
         "netstandardapp1.5": { }
-    },
-
-    "tools": {
-        "dotnet-tool-package": "1.0.0"
     }
 }
 ```
